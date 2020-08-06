@@ -20,8 +20,6 @@ function makeVoiceAPICall(path, data, callback) {
     },
   };
 
-  logger.info(options);
-
   const req = https.request(options, (res) => {
     let body = '';
     res.on('data', (response) => {
@@ -79,8 +77,6 @@ function createBroadcastCall(webHookUrl, callback) {
   jsonNumberArray.forEach((phoneNumber) => {
     broadCastNumbers.push({ phone: phoneNumber });
   });
-
-  logger.info(broadCastNumbers);
 
   const postData = JSON.stringify({
     name: 'TEST_APP',

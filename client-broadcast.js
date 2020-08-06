@@ -30,7 +30,7 @@ function onListening() {
     const msg = JSON.parse(response);
     call.appInstance = msg.appInstance;
     call.voice_id = msg.appInstance;
-    logger.info(`[${call.voice_id}] BroadCastCall AppInstance ${call.appInstance}`);
+    logger.info(`[${call.voice_id}] BroadCast Call App Instance ${call.appInstance}`);
   });
 }
 
