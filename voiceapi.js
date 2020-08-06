@@ -3,22 +3,25 @@ const https = require('https');
 // modules installed from npm
 const btoa = require('btoa');
 // application modules
-const config = require('./config-broadcast');
+require('dotenv').config();
 const logger = require('./logger');
 
 /* Function to make REST API Calls */
 function makeVoiceAPICall(path, data, callback) {
   const options = {
-    host: config.voice_server_host,
-    port: config.voice_server_port,
+    host: 'api.enablex.io',
+    port: 443,
     path,
     method: 'POST',
     headers: {
-      Authorization: `Basic ${btoa(`${config.app_id}:${config.app_key}`)}`,
+      Authorization: `Basic ${btoa(`${process.env.ENABLEX_APP_ID}:${process.env.ENABLEX_APP_KEY}`)}`,
       'Content-Type': 'application/json',
       'Content-Length': data.length,
     },
   };
+
+  logger.info(options);
+
   const req = https.request(options, (res) => {
     let body = '';
     res.on('data', (response) => {
@@ -41,12 +44,12 @@ function makeVoiceAPICall(path, data, callback) {
 /* Function to Hangup Call */
 function hangupCall(path, callback) {
   const options = {
-    host: config.voice_server_host,
-    port: config.voice_server_port,
+    host: 'api.enablex.io',
+    port: 443,
     path,
     method: 'DELETE',
     headers: {
-      Authorization: `Basic ${btoa(`${config.app_id}:${config.app_key}`)}`,
+      Authorization: `Basic ${btoa(`${process.env.ENABLEX_APP_ID}:${process.env.ENABLEX_APP_KEY}`)}`,
       'Content-Type': 'application/json',
     },
   };
@@ -70,13 +73,20 @@ function hangupCall(path, callback) {
 
 /* Function to Create Call */
 function createBroadcastCall(webHookUrl, callback) {
-  const jsonNumberArray = JSON.stringify(config.broadcast_list);
+  const jsonNumberArray = process.env.BROADCAST_PHONE_NUMBERS.split(',');
+  const broadCastNumbers = [];
+
+  jsonNumberArray.forEach((phoneNumber) => {
+    broadCastNumbers.push({ phone: phoneNumber });
+  });
+
+  logger.info(broadCastNumbers);
 
   const postData = JSON.stringify({
-    name: config.app_name,
+    name: 'TEST_APP',
     owner_ref: 'XYZ',
-    broadcastnumbersjson: jsonNumberArray,
-    from: config.enablex_number,
+    broadcastnumbersjson: JSON.stringify(broadCastNumbers),
+    from: process.env.ENABLEX_OUTBOUND_NUMBER,
     action_on_connect: {
       play: {
         text: 'This is the welcome greeting',
@@ -86,14 +96,16 @@ function createBroadcastCall(webHookUrl, callback) {
       },
     },
     call_param: {
-      IntervalBetweenRetries: config.interval_between_retries,
-      NumberOfRetries: config.number_of_retries,
+      IntervalBetweenRetries: 5000,
+      NumberOfRetries: 3,
     },
     event_url: webHookUrl,
     callhandler_url: webHookUrl,
   });
 
-  makeVoiceAPICall(config.path, postData, (response) => {
+  logger.info(postData);
+
+  makeVoiceAPICall('/voice/v1/broadcast', postData, (response) => {
     callback(response);
   });
 }
@@ -105,11 +117,11 @@ function onError(error) {
 
   switch (error.code) {
     case 'EACCES':
-      logger.error(`Port ${config.webhook_port} requires elevated privileges`);
+      logger.error(`Port ${process.env.SERVICE_PORT} requires elevated privileges`);
       process.exit(1);
       break;
     case 'EADDRINUSE':
-      logger.error(`Port ${config.webhook_port} is already in use`);
+      logger.error(`Port ${process.env.SERVICE_PORT} is already in use`);
       process.exit(1);
       break;
     default:

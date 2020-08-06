@@ -7,9 +7,9 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
 const ngrok = require('ngrok');
+require('dotenv').config();
 // application modules
 const logger = require('./logger');
-const config = require('./config-broadcast');
 const {
   makeVoiceAPICall, createBroadcastCall, hangupCall, onError,
 } = require('./voiceapi');
@@ -24,7 +24,7 @@ const call = {};
 call.voice_id = '';
 
 function onListening() {
-  logger.info(`Listening on Port ${config.webhook_port}`);
+  logger.info(`Listening on Port ${process.env.INCOMING_WEBHOOK_PORT}`);
   /* Initiating Broadcast Call */
   createBroadcastCall(url, (response) => {
     const msg = JSON.parse(response);
@@ -45,12 +45,12 @@ function shutdown() {
 }
 
 /* Initializing WebServer */
-if (config.ngrok === true) {
-  server = app.listen(config.webhook_port, () => {
-    console.log(`Server running on port ${config.webhook_port}`);
+if (process.env.USE_NGROK_TUNNEL === 'true') {
+  server = app.listen(process.env.SERVICE_PORT, () => {
+    console.log(`Server running on port ${process.env.SERVICE_PORT}`);
     (async () => {
       try {
-        url = await ngrok.connect({ proto: 'http', addr: config.webhook_port });
+        url = await ngrok.connect({ proto: 'http', addr: process.env.SERVICE_PORT });
         console.log('ngrok tunnel set up:', url);
       } catch (error) {
         console.log(`Error happened while trying to connect via ngrok ${JSON.stringify(error)}`);
@@ -63,33 +63,33 @@ if (config.ngrok === true) {
         const msg = JSON.parse(response);
         call.appInstance = msg.appInstance;
         call.voice_id = msg.appInstance;
-        console.log(`[${call.voice_id}] BroadCastCall AppInstance ${call.appInstance}`);
+        console.log(`[${call.voice_id}] Broadcast Call AppInstance ${call.appInstance}`);
       });
     })();
   });
-} else if (config.ngrok === false) {
+} else if (process.env.USE_NGROK_TUNNEL === 'false') {
   const options = {
-    key: readFileSync(config.certificate.ssl_key).toString(),
-    cert: readFileSync(config.certificate.ssl_cert).toString(),
+    key: readFileSync(process.env.CERTIFICATE_SSL_KEY).toString(),
+    cert: readFileSync(process.env.CERTIFICATE_SSL_CERT).toString(),
   };
-  if (config.certificate.ssl_ca_certs) {
+  if (process.env.CERTIFICATE_SSL_CACERTS) {
     options.ca = [];
-    options.ca.push(readFileSync(config.certificate.ssl_ca_certs).toString());
+    options.ca.push(readFileSync(process.env.CERTIFICATE_SSL_CACERTS).toString());
   }
   server = https.createServer(options, app);
-  app.set('port', config.webhook_port);
-  server.listen(config.webhook_port);
+  app.set('port', process.env.SERVICE_PORT);
+  server.listen(process.env.SERVICE_PORT);
 
   server.on('error', onError);
   server.on('listening', onListening);
-  url = `https://${config.webhook_host}:${config.webhook_port}/event`;
+  url = `${process.env.PUBLIC_WEBHOOK_HOST}:${process.env.SERVICE_PORT}/event`;
 }
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.post('/event', (req, res) => {
-  const key = crypto.createDecipher(req.headers['x-algoritm'], config.app_id);
+  const key = crypto.createDecipher(req.headers['x-algoritm'], process.env.ENABLEX_APP_ID);
   let decryptedData = key.update(req.body.encrypted_data, req.headers['x-format'], req.headers['x-encoding']);
   decryptedData += key.final(req.headers['x-encoding']);
   const jsonObj = JSON.parse(decryptedData);
@@ -124,7 +124,7 @@ function voiceEventHandler(voiceEvent) {
       },
     });
 
-    makeVoiceAPICall(`${config.path}/${call.appInstance}`, playCommand, () => {});
+    makeVoiceAPICall(`/voice/v1/broadcast/${call.appInstance}`, playCommand, () => {});
   } else if (voiceEvent.playstate === 'menutimeout' && voiceEvent.prompt_ref === '2') {
     logger.info(`[${call.voice_id}] Play finished. Disconnecting the call`);
     hangupCall(`/voice/v1/calls/${voiceEvent.voice_id}`, () => {});

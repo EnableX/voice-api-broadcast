@@ -15,7 +15,7 @@ npm install
 
 ## Setting up configurations.
 - Add app_id and app_key & other parameters in config file.
-- For Broadcast call client, change configs in config-broadcast.js
+- For Broadcast call client, change configs in .env
 
 ## Webhook security
 - Webhook security is also implemented as part of the voice service APIs.
