@@ -1,26 +1,27 @@
 // core modules
-const https = require('https');
+const { request } = require('https');
 // modules installed from npm
 const btoa = require('btoa');
 // application modules
 require('dotenv').config();
 const logger = require('./logger');
 
-/* Function to make REST API Calls */
-function makeVoiceAPICall(path, data, callback) {
-  const options = {
-    host: 'api.enablex.io',
-    port: 443,
-    path,
-    method: 'POST',
-    headers: {
-      Authorization: `Basic ${btoa(`${process.env.ENABLEX_APP_ID}:${process.env.ENABLEX_APP_KEY}`)}`,
-      'Content-Type': 'application/json',
-      'Content-Length': data.length,
-    },
-  };
+// EnableX server REST API call default options
+const httpOptions = {
+  host: 'api.enablex.io',
+  port: 443,
+  headers: {
+    Authorization: `Basic ${btoa(`${process.env.ENABLEX_APP_ID}:${process.env.ENABLEX_APP_KEY}`)}`,
+    'Content-Type': 'application/json',
+  },
+};
 
-  const req = https.request(options, (res) => {
+// To initiate Rest API Call to EnableX Server API
+const connectEnablexServer = (data, callback) => {
+  logger.info(`REQ URI:- ${httpOptions.method} ${httpOptions.host}:${httpOptions.port}${httpOptions.path}`);
+  logger.info(`REQ PARAM:- ${data}`);
+
+  const req = request(httpOptions, (res) => {
     let body = '';
     res.on('data', (response) => {
       body += response;
@@ -35,43 +36,49 @@ function makeVoiceAPICall(path, data, callback) {
     });
   });
 
-  req.write(data);
-  req.end();
-}
+  if (data == null) {
+    req.end();
+  } else {
+    req.end(data);
+  }
+};
 
-/* Function to Hangup Call */
-function hangupCall(path, callback) {
-  const options = {
-    host: 'api.enablex.io',
-    port: 443,
-    path,
-    method: 'DELETE',
-    headers: {
-      Authorization: `Basic ${btoa(`${process.env.ENABLEX_APP_ID}:${process.env.ENABLEX_APP_KEY}`)}`,
-      'Content-Type': 'application/json',
+// Voice API call to broadcast IVR using TTS
+function playBroadcastIVR(callAppInstance, voiceId, ttsPlayVoice, callback) {
+  httpOptions.path = `/voice/v1/broadcast/${callAppInstance}`;
+  httpOptions.method = 'POST';
+
+  const postData = JSON.stringify({
+    voice_id: voiceId,
+    play: {
+      text: 'This is the second level menu, call will disconnect shortly',
+      voice: ttsPlayVoice,
+      language: 'en-US',
+      prompt_ref: '2',
+      dtmf: true,
     },
-  };
-  const req = https.request(options, (res) => {
-    let body = '';
-    res.on('data', (data) => {
-      body += data;
-    });
-
-    res.on('end', () => {
-      callback(body);
-    });
-
-    res.on('error', (e) => {
-      logger.info(`Got error: ${e.message}`);
-    });
   });
 
-  req.end();
+  connectEnablexServer(postData, (response) => {
+    callback(response);
+  });
 }
 
-/* Function to Create Call */
-function createBroadcastCall(webHookUrl, callback) {
-  const jsonNumberArray = process.env.BROADCAST_PHONE_NUMBERS.split(',');
+// Voice API call to hangup the call
+function hangupCall(callVoiceId, callback) {
+  httpOptions.path = `/voice/v1/calls/${callVoiceId}`;
+  httpOptions.method = 'DELETE';
+  connectEnablexServer('', (response) => {
+    callback(response);
+  });
+}
+
+// Voice API call to make an outbound call
+function makeBroadcastCall(reqDetails, webHookUrl, callback) {
+  httpOptions.path = '/voice/v1/broadcast';
+  httpOptions.method = 'POST';
+
+  const jsonNumberArray = reqDetails.to.split(',');
   const broadCastNumbers = [];
 
   jsonNumberArray.forEach((phoneNumber) => {
@@ -82,11 +89,11 @@ function createBroadcastCall(webHookUrl, callback) {
     name: 'TEST_APP',
     owner_ref: 'XYZ',
     broadcastnumbersjson: JSON.stringify(broadCastNumbers),
-    from: process.env.ENABLEX_OUTBOUND_NUMBER,
+    from: reqDetails.from,
     action_on_connect: {
       play: {
-        text: 'This is the welcome greeting',
-        voice: 'female',
+        text: reqDetails.play_text,
+        voice: reqDetails.play_voice,
         language: 'en-US',
         prompt_ref: '1',
       },
@@ -99,35 +106,13 @@ function createBroadcastCall(webHookUrl, callback) {
     callhandler_url: webHookUrl,
   });
 
-  logger.info(postData);
-
-  makeVoiceAPICall('/voice/v1/broadcast', postData, (response) => {
+  connectEnablexServer(postData, (response) => {
     callback(response);
   });
 }
 
-function onError(error) {
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
-
-  switch (error.code) {
-    case 'EACCES':
-      logger.error(`Port ${process.env.SERVICE_PORT} requires elevated privileges`);
-      process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      logger.error(`Port ${process.env.SERVICE_PORT} is already in use`);
-      process.exit(1);
-      break;
-    default:
-      throw error;
-  }
-}
-
 module.exports = {
-  makeVoiceAPICall,
-  createBroadcastCall,
+  playBroadcastIVR,
+  makeBroadcastCall,
   hangupCall,
-  onError,
 };
