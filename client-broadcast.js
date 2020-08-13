@@ -25,6 +25,7 @@ let webHookUrl;
 const call = {};
 let ttsPlayVoice = 'female';
 const sseMsg = [];
+const servicePort = process.env.SERVICE_PORT || 3000;
 
 // shutdown the node server forcefully
 function shutdown() {
@@ -40,12 +41,12 @@ function shutdown() {
 // exposes web server running on local machine to the internet
 // @param - web server port
 // @return - public URL of your tunnel
-function createNgrokTunnel(serverPort) {
-  server = app.listen(serverPort, () => {
-    console.log(`Server running on port ${serverPort}`);
+function createNgrokTunnel() {
+  server = app.listen(servicePort, () => {
+    console.log(`Server running on port ${servicePort}`);
     (async () => {
       try {
-        webHookUrl = await connect({ proto: 'http', addr: serverPort });
+        webHookUrl = await connect({ proto: 'http', addr: servicePort });
         console.log('ngrok tunnel set up:', webHookUrl);
       } catch (error) {
         console.log(`Error happened while trying to connect via ngrok ${JSON.stringify(error)}`);
@@ -59,7 +60,7 @@ function createNgrokTunnel(serverPort) {
 
 // Set webhook event url
 function setWebHookEventUrl() {
-  logger.info(`Listening on Port ${process.env.SERVICE_PORT}`);
+  logger.info(`Listening on Port ${servicePort}`);
   webHookUrl = `${process.env.PUBLIC_WEBHOOK_HOST}/event`;
 }
 
@@ -71,11 +72,11 @@ function onError(error) {
 
   switch (error.code) {
     case 'EACCES':
-      logger.error(`Port ${process.env.SERVICE_PORT} requires elevated privileges`);
+      logger.error(`Port ${servicePort} requires elevated privileges`);
       process.exit(1);
       break;
     case 'EADDRINUSE':
-      logger.error(`Port ${process.env.SERVICE_PORT} is already in use`);
+      logger.error(`Port ${servicePort} is already in use`);
       process.exit(1);
       break;
     default:
@@ -85,7 +86,7 @@ function onError(error) {
 
 // create and start an HTTPS node app server
 // An SSL Certificate (Self Signed or Registered) is required
-function createAppServer(serverPort) {
+function createAppServer() {
   const options = {
     key: readFileSync(process.env.CERTIFICATE_SSL_KEY).toString(),
     cert: readFileSync(process.env.CERTIFICATE_SSL_CERT).toString(),
@@ -97,18 +98,17 @@ function createAppServer(serverPort) {
 
   // Create https express server
   server = createServer(options, app);
-  app.set('port', serverPort);
-  server.listen(serverPort);
+  app.set('port', servicePort);
+  server.listen(servicePort);
   server.on('error', onError);
   server.on('listening', setWebHookEventUrl);
 }
 
 /* Initializing WebServer */
-const servicePort = process.env.SERVICE_PORT || 3000;
 if (process.env.USE_NGROK_TUNNEL === 'true' && process.env.USE_PUBLIC_WEBHOOK === 'false') {
-  createNgrokTunnel(servicePort);
+  createNgrokTunnel();
 } else if (process.env.USE_PUBLIC_WEBHOOK === 'true' && process.env.USE_NGROK_TUNNEL === 'false') {
-  createAppServer(servicePort);
+  createAppServer();
 } else {
   logger.error('Incorrect configuration - either USE_NGROK_TUNNEL or USE_PUBLIC_WEBHOOK should be set to true');
 }

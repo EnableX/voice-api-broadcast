@@ -69,6 +69,7 @@ function hangupCall(callVoiceId, callback) {
   httpOptions.path = `/voice/v1/calls/${callVoiceId}`;
   httpOptions.method = 'DELETE';
   connectEnablexServer('', (response) => {
+    logger.info(`RESPONSE:- ${response}`);
     callback(response);
   });
 }
@@ -107,6 +108,7 @@ function makeBroadcastCall(reqDetails, webHookUrl, callback) {
   });
 
   connectEnablexServer(postData, (response) => {
+    logger.info(`RESPONSE:- ${response}`);
     callback(response);
   });
 }
