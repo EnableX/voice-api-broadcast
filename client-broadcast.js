@@ -105,12 +105,17 @@ function createAppServer() {
 }
 
 /* Initializing WebServer */
-if (process.env.USE_NGROK_TUNNEL === 'true' && process.env.USE_PUBLIC_WEBHOOK === 'false') {
-  createNgrokTunnel();
-} else if (process.env.USE_PUBLIC_WEBHOOK === 'true' && process.env.USE_NGROK_TUNNEL === 'false') {
-  createAppServer();
+if (process.env.ENABLEX_APP_ID
+  && process.env.ENABLEX_APP_KEY) {
+  if (process.env.USE_NGROK_TUNNEL === 'true' && process.env.USE_PUBLIC_WEBHOOK === 'false') {
+    createNgrokTunnel();
+  } else if (process.env.USE_PUBLIC_WEBHOOK === 'true' && process.env.USE_NGROK_TUNNEL === 'false') {
+    createAppServer();
+  } else {
+    logger.error('Incorrect configuration - either USE_NGROK_TUNNEL or USE_PUBLIC_WEBHOOK should be set to true');
+  }
 } else {
-  logger.error('Incorrect configuration - either USE_NGROK_TUNNEL or USE_PUBLIC_WEBHOOK should be set to true');
+  logger.error('Please set env variables - ENABLEX_APP_ID, ENABLEX_APP_KEY');
 }
 
 process.on('SIGINT', () => {
