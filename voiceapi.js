@@ -75,7 +75,7 @@ function hangupCall(callVoiceId, callback) {
 }
 
 // Voice API call to make an outbound call
-function makeBroadcastCall(reqDetails, webHookUrl, callback) {
+function makeBroadcastCall(reqDetails, callback) {
   httpOptions.path = '/voice/v1/broadcast';
   httpOptions.method = 'POST';
 
@@ -103,8 +103,8 @@ function makeBroadcastCall(reqDetails, webHookUrl, callback) {
       IntervalBetweenRetries: 5000,
       NumberOfRetries: 3,
     },
-    event_url: webHookUrl,
-    callhandler_url: webHookUrl,
+    event_url: `${process.env.PUBLIC_WEBHOOK_URL}/event`,
+    callhandler_url: `${process.env.PUBLIC_WEBHOOK_URL}/event`,
   });
 
   connectEnablexServer(postData, (response) => {
