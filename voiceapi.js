@@ -45,18 +45,16 @@ const connectEnablexServer = (data, callback) => {
 
 // Voice API call to broadcast IVR using TTS
 function playBroadcastIVR(callAppInstance, voiceId, ttsPlayVoice, callback) {
-  httpOptions.path = `/voice/v1/broadcast/${callAppInstance}`;
-  httpOptions.method = 'POST';
+  httpOptions.path = `/voice/v1/broadcast/${callAppInstance}/play`;
+  httpOptions.method = 'PUT';
 
   const postData = JSON.stringify({
     voice_id: voiceId,
-    play: {
       text: 'This is the second level menu, call will disconnect shortly',
       voice: ttsPlayVoice,
       language: 'en-US',
       prompt_ref: '2',
-      dtmf: true,
-    },
+      dtmf: true
   });
 
   connectEnablexServer(postData, (response) => {
@@ -66,7 +64,7 @@ function playBroadcastIVR(callAppInstance, voiceId, ttsPlayVoice, callback) {
 
 // Voice API call to hangup the call
 function hangupCall(callVoiceId, callback) {
-  httpOptions.path = `/voice/v1/calls/${callVoiceId}`;
+  httpOptions.path = `/voice/v1/call/${callVoiceId}`;
   httpOptions.method = 'DELETE';
   connectEnablexServer('', (response) => {
     logger.info(`RESPONSE:- ${response}`);
