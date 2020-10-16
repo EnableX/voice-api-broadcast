@@ -1,5 +1,5 @@
 // core modules
-const https = require('https');
+const http = require('http');
 // modules installed from npm
 const { EventEmitter } = require('events');
 const express = require('express');
@@ -66,7 +66,7 @@ function createAppServer() {
   const options = {};
 
   // Create https express server
-  server = https.createServer(options, app);
+  server = http.createServer(options, app);
   app.set('port', servicePort);
   server.listen(servicePort);
   server.on('error', onError);
@@ -134,15 +134,15 @@ app.get('/event-stream', (req, res) => {
 // Webhook event which will be called by EnableX server once an outbound call is made
 // It should be publicly accessible. Please refer document for webhook security.
 app.post('/event', (req, res) => {
-  if(req.headers['x-algoritm'] !== undefined){
-      const key = createDecipher(req.headers['x-algoritm'], process.env.ENABLEX_APP_ID);
-      let decryptedData = key.update(req.body.encrypted_data, req.headers['x-format'], req.headers['x-encoding']);
-      decryptedData += key.final(req.headers['x-encoding']);
-      const jsonObj = JSON.parse(decryptedData);
-      logger.info(JSON.stringify(jsonObj));
+  if (req.headers['x-algoritm'] !== undefined) {
+    const key = createDecipher(req.headers['x-algoritm'], process.env.ENABLEX_APP_ID);
+    let decryptedData = key.update(req.body.encrypted_data, req.headers['x-format'], req.headers['x-encoding']);
+    decryptedData += key.final(req.headers['x-encoding']);
+    const jsonObj = JSON.parse(decryptedData);
+    logger.info(JSON.stringify(jsonObj));
   } else {
-      const jsonObj = req.body;
-      logger.info(JSON.stringify(jsonObj));
+    const jsonObj = req.body;
+    logger.info(JSON.stringify(jsonObj));
   }
 
   res.statusCode = 200;
