@@ -3,7 +3,7 @@ This example contains instructions how users can initiate Broadcast Calls.
 
 
 ## Pre-requisite
-- You will need Enablex Application credentials, APP ID and APP KEY.
+- You will need Enablex Application credentials, APP ID and APP KEY. To find credentials, register with EnableX (https://portal.enablex.io/cpaas/trial-sign-up/).
 - You will need a place for hosting this application either cloud or local machine.
 - If hosting on local machine, you need to install ngrok from https://ngrok.com/
 
