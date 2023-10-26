@@ -1,6 +1,6 @@
-# **Basic Client Examples to demonstrate Broadcast Calls using Enablex Voice APIs. **
-This example contains instructions how users can initiate Broadcast Calls.
+# EnableX Programmable Voice API: Initiating Broadcast Calls
 
+This sample app provides a hands-on guide to initiating broadcast calls seamlessly. From obtaining the essential EnableX application credentials to configuring and setting up your local or cloud environment, this guide ensures a smooth journey. Whether you're looking to host on the cloud or locally using tools like ngrok, the comprehensive instructions will cater to your needs. With intuitive steps for both Mac/Linux and Windows environments, this example offers the convenience of a tailored setup process. Explore, install, and get started with the future of broadcast calls today.
 
 ## Pre-requisite
 - You will need Enablex Application credentials, APP ID and APP KEY. To find credentials, register with EnableX (https://portal.enablex.io/cpaas/trial-sign-up/).
